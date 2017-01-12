@@ -1,8 +1,8 @@
-#include<stdio.h>
+#include <stdio.h>
 //#include<windows.h>
-#include<stdlib.h>
-#include<time.h> 
-//#include<conio.h>
+#include <stdlib.h>
+#include <time.h> 
+//#include <conio.h>
 #define up 119
 #define down 115
 #define left 97
