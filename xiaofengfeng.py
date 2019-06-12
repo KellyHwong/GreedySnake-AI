@@ -183,23 +183,15 @@ def checkForKeyPress():
 
 
 def showStartScreen():
-
     DISPLAYSURF.fill(BGCOLOR)
-
     titleFont = pygame.font.Font('PAPYRUS.ttf', 100)
-
     titleSurf = titleFont.render('Wormy!', True, GREEN)
-
     titleRect = titleSurf.get_rect()
     titleRect.center = (WINDOWWIDTH / 2, WINDOWHEIGHT / 2)
     DISPLAYSURF.blit(titleSurf, titleRect)
-
     drawPressKeyMsg()
-
     pygame.display.update()
-
     while True:
-
         if checkForKeyPress():
             pygame.event.get()  # clear event queue
             return
