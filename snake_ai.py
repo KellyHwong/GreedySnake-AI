@@ -5,7 +5,7 @@
 # @Link    : http://example.org
 # @Version : $Id$
 
-from snake import UP, DOWN, LEFT, RIGHT
+# from snake import UP, DOWN, LEFT, RIGHT
 
 
 class SnakeAI(object):
