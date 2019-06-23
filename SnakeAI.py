@@ -5,7 +5,7 @@
 # @Link    : http://example.org
 # @Version : $Id$
 
-# from snake import UP, DOWN, LEFT, RIGHT
+from constant import *
 
 
 class SnakeAI(object):
@@ -27,6 +27,9 @@ class SnakeAI(object):
     def __init__(self, snake):
         self.snake = snake
 
+    def a_star(parameter_list):  # A*
+        pass
+
     def predict(self):
         """Prediction function. Return which direction the snake should go for next step.
 
@@ -42,6 +45,9 @@ class SnakeAI(object):
         # 输出(next)direction
         direction = RIGHT
         return direction
+
+    def print_head(self):
+        print(self.snake.cells[0])
 
 
 def main():

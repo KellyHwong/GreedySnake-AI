@@ -10,8 +10,10 @@ import sys
 import time
 # import pygame
 from pygame.locals import *
+from constant import *
+from SnakeAI import SnakeAI
 
-from snake_ai import SnakeAI
+# 特性 类的常量经过初始化后就不应该更改
 
 # 游戏常量，世界大小
 FPS = 5  # 屏幕刷新率（在这里相当于贪吃蛇的速度）
@@ -43,12 +45,6 @@ DARKGREEN = (0, 155, 0)
 DARKGRAY = (40, 40, 40)
 BGCOLOR = BLACK
 
-# 定义贪吃蛇的动作
-UP = 'up'
-DOWN = 'down'
-LEFT = 'left'
-RIGHT = 'right'
-
 
 class Snake(object):
     """Implement a snake algorithm level class
@@ -76,8 +72,7 @@ class Snake(object):
 
     def eat_apple(self, apple) -> bool:
         if self.cells[0][0] == apple[0] and self.cells[0][1] == apple[1]:
-            # 不移除蛇的最后一个尾巴格
-            return True
+            return True  # 不移除蛇的最后一个尾巴格
         else:
             del self.cells[-1]  # 移除蛇的最后一个尾巴格
             return False
@@ -98,11 +93,12 @@ class Snake(object):
     def alive(self):
         # 检查贪吃蛇是否撞到撞到边界
         if self.cells[0][0] == -1 or self.cells[0][0] == CELLWIDTH or self.cells[0][1] == -1 or self.cells[0][1] == CELLHEIGHT:
-            return  # game over
+            return False  # game over
         # 检查贪吃蛇是否撞到自己
         for cell in self.cells[1:]:
             if cell[0] == self.cells[0][0] and cell[1] == self.cells[0][1]:
-                return  # game over
+                return False  # game over
+        return True
 
 
 class SnakeGame(object):
@@ -131,6 +127,16 @@ class SnakeGame(object):
         self.ai = ai
         self.pygame = __import__("pygame")
         self.pygame.init()  # 初始化pygame
+        # 定义全局变量 # Fix
+        # global FPSCLOCK, DISPLAYSURF, self.BASICFONT
+        self.FPSCLOCK = self.pygame.time.Clock()  # 获得pygame时钟
+        self.DISPLAYSURF = self.pygame.display.set_mode(
+            (WINDOWWIDTH, WINDOWHEIGHT))  # 设置屏幕宽高
+        self.BASICFONT = self.pygame.font.Font(
+            'PAPYRUS.ttf', 18)  # self.BASICFONT
+
+    def turn(self):
+        pass
 
     def run(self):
         while True:  # 游戏主循环
@@ -138,37 +144,42 @@ class SnakeGame(object):
                 if event.type == QUIT:  # 退出事件
                     self.terminate()
                 elif event.type == KEYDOWN:  # 按键事件
-                    # 如果按下的是左键或a键，且当前的方向不是向右，就改变方向，以此类推
-                    if (event.key == K_LEFT or event.key == K_a) and self.snake.direction != RIGHT:
-                        self.snake.direction = LEFT
-                    elif (event.key == K_RIGHT or event.key == K_d) and self.snake.direction != LEFT:
-                        self.snake.direction = RIGHT
-                    elif (event.key == K_UP or event.key == K_w) and self.snake.direction != DOWN:
-                        self.snake.direction = UP
-                    elif (event.key == K_DOWN or event.key == K_s) and self.snake.direction != UP:
-                        self.snake.direction = DOWN
-                    elif event.key == K_ESCAPE:
+                    # 用户按键
+                    if self.ai is None:
+                        # 如果按下的是左键或a键，且当前的方向不是向右，就改变方向，以此类推
+                        if (event.key == K_LEFT or event.key == K_a) and self.snake.direction != RIGHT:
+                            self.snake.direction = LEFT
+                        elif (event.key == K_RIGHT or event.key == K_d) and self.snake.direction != LEFT:
+                            self.snake.direction = RIGHT
+                        elif (event.key == K_UP or event.key == K_w) and self.snake.direction != DOWN:
+                            self.snake.direction = UP
+                        elif (event.key == K_DOWN or event.key == K_s) and self.snake.direction != UP:
+                            self.snake.direction = DOWN
+                    else:  # AI Mode
+                        self.snake.direction = self.ai.predict()
+                    if event.key == K_ESCAPE:
                         self.terminate()
 
-            self.snake.alive()
+            if not self.snake.alive():
+                return -1
             if self.snake.eat_apple(self.apple):
                 self.apple = getRandomLocation()  # 重新随机生成一个apple
             self.snake.move()
 
-            DISPLAYSURF.fill(BGCOLOR)  # 绘制背景
+            self.DISPLAYSURF.fill(BGCOLOR)  # 绘制背景
             self.drawGrid()
             self.drawWorm()
             self.drawApple()
             self.drawScore(len(self.snake.cells) - 3)  # 绘制分数（分数为贪吃蛇数组当前的长度-3）
             self.pygame.display.update()  # 更新屏幕
-            FPSCLOCK.tick(FPS)  # 设置帧率
+            self.FPSCLOCK.tick(FPS)  # 设置帧率
 
     def drawGrid(self):  # 绘制所有的方格
         for x in range(0, WINDOWWIDTH, CELLSIZE):  # draw vertical lines
-            self.pygame.draw.line(DISPLAYSURF, DARKGRAY,
+            self.pygame.draw.line(self.DISPLAYSURF, DARKGRAY,
                                   (x, 0), (x, WINDOWHEIGHT))
         for y in range(0, WINDOWHEIGHT, CELLSIZE):  # draw horizontal lines
-            self.pygame.draw.line(DISPLAYSURF, DARKGRAY,
+            self.pygame.draw.line(self.DISPLAYSURF, DARKGRAY,
                                   (0, y), (WINDOWWIDTH, y))
 
     def drawWorm(self):
@@ -176,30 +187,31 @@ class SnakeGame(object):
             x = coord[0] * CELLSIZE
             y = coord[1] * CELLSIZE
             wormSegmentRect = self.pygame.Rect(x, y, CELLSIZE, CELLSIZE)
-            self.pygame.draw.rect(DISPLAYSURF, DARKGREEN, wormSegmentRect)
+            self.pygame.draw.rect(self.DISPLAYSURF, DARKGREEN, wormSegmentRect)
             wormInnerSegmentRect = self.pygame.Rect(
                 x + 4, y + 4, CELLSIZE - 8, CELLSIZE - 8)
-            self.pygame.draw.rect(DISPLAYSURF, GREEN, wormInnerSegmentRect)
+            self.pygame.draw.rect(self.DISPLAYSURF, GREEN,
+                                  wormInnerSegmentRect)
 
     def drawApple(self):  # 根据 coord 绘制 apple
         x = self.apple[0] * CELLSIZE
         y = self.apple[1] * CELLSIZE
         appleRect = self.pygame.Rect(x, y, CELLSIZE, CELLSIZE)
-        self.pygame.draw.rect(DISPLAYSURF, RED, appleRect)
+        self.pygame.draw.rect(self.DISPLAYSURF, RED, appleRect)
 
     def drawScore(self, score):  # 绘制分数
-        scoreSurf = BASICFONT.render('Score: %s' % (score), True, WHITE)
+        scoreSurf = self.BASICFONT.render('Score: %s' % (score), True, WHITE)
         scoreRect = scoreSurf.get_rect()
         scoreRect.topleft = (WINDOWWIDTH - 120, 10)
-        DISPLAYSURF.blit(scoreSurf, scoreRect)
+        self.DISPLAYSURF.blit(scoreSurf, scoreRect)
 
     def showStartScreen(self):  # 显示开始画面
-        DISPLAYSURF.fill(BGCOLOR)
+        self.DISPLAYSURF.fill(BGCOLOR)
         titleFont = self.pygame.font.Font('PAPYRUS.ttf', 100)
         titleSurf = titleFont.render('Wormy!', True, GREEN)
         titleRect = titleSurf.get_rect()
         titleRect.center = (WINDOWWIDTH / 2, WINDOWHEIGHT / 2)
-        DISPLAYSURF.blit(titleSurf, titleRect)
+        self.DISPLAYSURF.blit(titleSurf, titleRect)
         self.drawPressKeyMsg()
         self.pygame.display.update()
         while True:
@@ -218,23 +230,24 @@ class SnakeGame(object):
                            2-gameRect.height-10)
         overRect.midtop = (WINDOWWIDTH / 2, WINDOWHEIGHT / 2)
 
-        DISPLAYSURF.blit(gameSurf, gameRect)
-        DISPLAYSURF.blit(overSurf, overRect)
+        self.DISPLAYSURF.blit(gameSurf, gameRect)
+        self.DISPLAYSURF.blit(overSurf, overRect)
         self.drawPressKeyMsg()
         self.pygame.display.update()
         self.pygame.time.wait(500)
-        checkForKeyPress()  # clear out any key presses in the event queue
+        self.checkForKeyPress()  # clear out any key presses in the event queue
 
         while True:
-            if checkForKeyPress():
+            if self.checkForKeyPress():
                 self.pygame.event.get()  # clear event queue
                 return
 
     def drawPressKeyMsg(self):  # 绘制提示消息
-        pressKeySurf = BASICFONT.render('Press a key to play.', True, DARKGRAY)
+        pressKeySurf = self.BASICFONT.render(
+            'Press a key to play.', True, DARKGRAY)
         pressKeyRect = pressKeySurf.get_rect()
         pressKeyRect.topleft = (WINDOWWIDTH - 200, WINDOWHEIGHT - 30)
-        DISPLAYSURF.blit(pressKeySurf, pressKeyRect)
+        self.DISPLAYSURF.blit(pressKeySurf, pressKeyRect)
 
     def checkForKeyPress(self):  # 检查按键是否有按键事件
         if len(self.pygame.event.get(QUIT)) > 0:
@@ -253,43 +266,3 @@ class SnakeGame(object):
 
 def getRandomLocation():  # 随机生成一个坐标位置
     return (random.randint(0, CELLWIDTH - 1), random.randint(0, CELLHEIGHT - 1))
-
-
-def main():
-    startx = random.randint(5, CELLWIDTH - 6)
-    starty = random.randint(5, CELLHEIGHT - 6)
-    # 以这个点为起点，建立一个长度为3格的贪吃蛇（数组）
-    wormCoords = [(startx, starty),
-                  (startx - 1, starty),
-                  (startx - 2, starty)]
-    snake = Snake(dim=(WORLD_WIDTH, WORLD_HEIGHT),
-                  cells=wormCoords, direction=RIGHT)
-    # ai = SnakeAI(snake=snake)
-    apple = getRandomLocation()
-    game = SnakeGame(snake=snake, apple=apple)
-    # 定义全局变量
-    global FPSCLOCK, DISPLAYSURF, BASICFONT
-    FPSCLOCK = game.pygame.time.Clock()  # 获得pygame时钟
-    DISPLAYSURF = game.pygame.display.set_mode(
-        (WINDOWWIDTH, WINDOWHEIGHT))  # 设置屏幕宽高
-    BASICFONT = game.pygame.font.Font('PAPYRUS.ttf', 18)  # BASICFONT
-    game.pygame.display.set_caption('Greedy Snake AI')  # 设置窗口的标题
-
-    game.showStartScreen()  # 显示开始画面
-
-    while True:
-        # 这里一直循环于开始游戏和显示游戏结束画面之间，
-        # 运行游戏里有一个循环，显示游戏结束画面也有一个循环
-        # 两个循环都有相应的return，这样就可以达到切换这两个模块的效果
-        # 你不会多线程？ by
-        game.run()  # 运行游戏
-        game.showGameOverScreen()  # 显示游戏结束画面
-
-
-def terminate():  # 退出
-    pygame.quit()
-    sys.exit()
-
-
-if __name__ == '__main__':
-    main()

@@ -4,3 +4,9 @@
 # @Author  : Your Name (you@example.org)
 # @Link    : http://example.org
 # @Version : $Id$
+
+# 定义贪吃蛇的动作
+UP = 'up'
+DOWN = 'down'
+LEFT = 'left'
+RIGHT = 'right'
